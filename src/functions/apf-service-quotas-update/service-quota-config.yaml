@@ -1,0 +1,9 @@
+ServiceQuotas:
+  lambda:
+    - QuotaCode: L-B99A9384
+      DesiredValue: 1500
+  ec2:
+    - QuotaCode: L-88CF9481
+      DesiredValue: 1
+    - QuotaCode: L-34B43A08
+      DesiredValue: 7

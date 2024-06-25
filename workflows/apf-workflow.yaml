@@ -1,0 +1,150 @@
+Comment: A description of my state machine
+StartAt: Create Account
+States:
+  Get Account Details:
+    Next: Persist Account Details
+    Parameters:
+      FunctionName: ${apf_account_describe}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.acct_describe
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Persist Account Details:
+    Next: Import Terraform State
+    Parameters:
+      FunctionName: ${apf_persist_data}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.acct_persist
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Import Terraform State:
+    Next: Update Service Quota Limits
+    Parameters:
+      FunctionName: ${apf_tf_generate_account}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.tf_acct_import
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Create Account:
+    Next: Get Account Request Status
+    Parameters:
+      FunctionName: ${apf_account_create}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.acct_create
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Get Account Request Status:
+    Next: Validate Account Creation
+    Parameters:
+      FunctionName: ${apf_account_describe_request}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.acct_describe_request
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Account Request Failed:
+    Type: Fail
+  Update Service Quota Limits:
+    End: true
+    Parameters:
+      FunctionName: ${apf_service_quotas_update}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.service_quotas_update
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
+  Validate Account Creation:
+    Choices:
+      - And:
+          - IsPresent: true
+            Variable: $.acct_describe_request.results.state
+          - StringMatches: IN_PROGRESS
+            Variable: $.acct_describe_request.results.state
+        Comment: account request in progress
+        Next: Wait For Account
+      - And:
+          - Variable: $.acct_describe_request.results.state
+            IsPresent: true
+          - Variable: $.acct_describe_request.results.state
+            StringMatches: FAILED
+          - Variable: $.acct_describe_request.results.failure_reason
+            StringMatches: EMAIL_ALREADY_EXISTS
+        Comment: account already exists
+        Next: Get Account Details
+      - And:
+          - Variable: $.acct_describe_request.results.state
+            IsPresent: true
+          - Variable: $.acct_describe_request.results.state
+            StringMatches: SUCCEEDED
+        Comment: account created successfully
+        Next: Get Account Details
+    Default: Account Request Failed
+    Type: Choice
+  Wait For Account:
+    Next: Get Account Request Status
+    Seconds: 5
+    Type: Wait
