@@ -1,7 +1,8 @@
 locals {
-  tfe_auth_token_secret = "tfe-auth-token"
+  tfe_auth_token_secret = "tfe-auth-token-latest"
 }
 
+# tfe auth token used by lambdas to interacte with tfe api
 resource "aws_secretsmanager_secret" "tfe_auth_token" {
   name = local.tfe_auth_token_secret
 }

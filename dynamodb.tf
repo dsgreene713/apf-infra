@@ -2,7 +2,8 @@ locals {
   dynamo_account_table = "apf-aws-accounts"
 }
 
-module "dynamodb-table" {
+# stores aws account metadata after pipeline provisioning
+module "aws-accounts" {
   source  = "terraform-aws-modules/dynamodb-table/aws"
   version = "~> 4.0.1"
 

@@ -11,7 +11,8 @@ locals {
   }
 }
 
-module "stepfunctions-wrapper" {
+# apf sfn pipeline workflow
+module "apf_workflow" {
   source  = "app.terraform.io/blunatech-demo/stepfunctions-wrapper/aws"
   version = "~> 1.0.0"
 

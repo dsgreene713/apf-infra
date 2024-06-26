@@ -4,7 +4,7 @@ locals {
   lambda_base_source_path = "${path.module}/src/functions"
   tfe_import_var_name     = "accounts_to_import"
 
-  // function name constants
+  # function name constants
   lambda_names = {
     apf_account_create           = "apf-account-create"
     apf_account_describe         = "apf-account-describe"
@@ -15,12 +15,12 @@ locals {
     apf_tf_workspace_import      = "apf-tf-workspace-import"
   }
 
-  // dynamically generate arns to prvent circular loops with dependent resources
+  # dynamically generate arns to prvent circular loops with dependent resources
   lambda_arns = {
     for k, v in local.lambda_names : k => "arn:aws:lambda:${local.arn_account_slug}:function:${v}"
   }
 
-  // function configuration definition
+  # function configuration definition
   lambdas = {
     (local.lambda_names.apf_account_create) = {
       description     = "lambda to create org account"
@@ -105,7 +105,8 @@ module "lambdas" {
 }
 
 ######################################################################################
-# least priviledged iam bits
+# lambda iam policy docs
+# each lambda gets its own policy to ensure least privilege
 ######################################################################################
 data "aws_iam_policy_document" "apf_account_create" {
   statement {

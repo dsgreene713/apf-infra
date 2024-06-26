@@ -12,7 +12,8 @@ terraform {
     organization = "blunatech-demo"
 
     workspaces {
-      name = "apf-infra-us-east-1"
+      project = "apf-infra"
+      name    = "apf-infra-us-east-1"
     }
   }
 }
