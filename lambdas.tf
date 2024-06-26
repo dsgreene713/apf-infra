@@ -2,6 +2,7 @@ locals {
   lambda_handler          = "main.lambda_handler"
   lambda_runtime          = "python3.12"
   lambda_base_source_path = "${path.module}/src/functions"
+  tfe_import_var_name     = "accounts_to_import"
 
   // function name constants
   lambda_names = {
@@ -9,8 +10,9 @@ locals {
     apf_account_describe         = "apf-account-describe"
     apf_account_describe_request = "apf-account-describe-request"
     apf_service_quotas_update    = "apf-service-quotas-update"
-    apf_tf_generate_account      = "apf-tf-generate-account"
     apf_persist_data             = "apf-persist-data"
+    apf_tf_workspace_update      = "apf-tf-workspace-update"
+    apf_tf_workspace_import      = "apf-tf-workspace-import"
   }
 
   // dynamically generate arns to prvent circular loops with dependent resources
@@ -41,16 +43,6 @@ locals {
       source_path     = "${local.lambda_base_source_path}/${local.lambda_names.apf_service_quotas_update}"
       iam_policy_docs = [data.aws_iam_policy_document.apf_service_quotas_update.json]
     }
-    (local.lambda_names.apf_tf_generate_account) = {
-      description = "lambda to dynamically generate terraform code"
-      handler     = local.lambda_handler
-      runtime     = local.lambda_runtime
-      source_path = "${local.lambda_base_source_path}/${local.lambda_names.apf_tf_generate_account}"
-
-      environment_vars = {
-        DYNAMODB_TABLE = local.dynamo_account_table
-      }
-    }
     (local.lambda_names.apf_account_describe) = {
       description     = "lambda to write to dynamodb"
       handler         = local.lambda_handler
@@ -67,6 +59,28 @@ locals {
 
       environment_vars = {
         DYNAMODB_TABLE = local.dynamo_account_table
+      }
+    }
+    (local.lambda_names.apf_tf_workspace_update) = {
+      description     = "lambda to update tfe workspace config"
+      handler         = local.lambda_handler
+      runtime         = local.lambda_runtime
+      source_path     = "${local.lambda_base_source_path}/${local.lambda_names.apf_tf_workspace_update}"
+      iam_policy_docs = [data.aws_iam_policy_document.apf_tf_workspace_update.json]
+
+      environment_vars = {
+        TFE_AUTH_TOKEN_SECRET = local.tfe_auth_token_secret
+        TFE_IMPORT_VAR_NAME   = local.tfe_import_var_name
+      }
+    }
+    (local.lambda_names.apf_tf_workspace_import) = {
+      description = "lambda to import newly provisioned resource to tfe state"
+      handler     = local.lambda_handler
+      runtime     = local.lambda_runtime
+      source_path = "${local.lambda_base_source_path}/${local.lambda_names.apf_tf_workspace_import}"
+
+      environment_vars = {
+        TFE_AUTH_TOKEN_SECRET = local.tfe_auth_token_secret
       }
     }
   }
@@ -153,5 +167,19 @@ data "aws_iam_policy_document" "apf_persist_data" {
       "dynamodb:PutItem",
     ]
     resources = ["arn:aws:dynamodb:*:${data.aws_caller_identity.current.account_id}:table/*"]
+  }
+}
+
+data "aws_iam_policy_document" "apf_tf_workspace_update" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
+    ]
+    resources = [
+      "arn:aws:secretsmanager:*:${data.aws_caller_identity.current.account_id}:secret:${local.tfe_auth_token_secret}",
+      "arn:aws:secretsmanager:*:${data.aws_caller_identity.current.account_id}:secret:${local.tfe_auth_token_secret}*"
+    ]
   }
 }

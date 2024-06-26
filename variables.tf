@@ -1,7 +1,10 @@
 ######################################################################################
 # required variables
 ######################################################################################
-
+variable "tfe_auth_token" {
+  type        = string
+  description = "auth token used by lambdas to authenticate with terraform enterprise"
+}
 
 ######################################################################################
 # optional variables

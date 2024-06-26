@@ -21,7 +21,7 @@ States:
         MaxAttempts: 3
     Type: Task
   Persist Account Details:
-    Next: Import Terraform State
+    Next: Update Terraform Account List
     Parameters:
       FunctionName: ${apf_persist_data}
       Payload.$: $
@@ -39,13 +39,32 @@ States:
         IntervalSeconds: 1
         MaxAttempts: 3
     Type: Task
+  Update Terraform Account List:
+    Next: Import Terraform State
+    Parameters:
+      FunctionName: ${apf_tf_workspace_update}
+      Payload.$: $
+    Resource: arn:aws:states:::lambda:invoke
+    ResultPath: $.tf_workspace_update
+    ResultSelector:
+      results.$: $.Payload
+    Retry:
+      - BackoffRate: 2
+        ErrorEquals:
+          - Lambda.ServiceException
+          - Lambda.AWSLambdaException
+          - Lambda.SdkClientException
+          - Lambda.TooManyRequestsException
+        IntervalSeconds: 1
+        MaxAttempts: 3
+    Type: Task
   Import Terraform State:
     Next: Update Service Quota Limits
     Parameters:
-      FunctionName: ${apf_tf_generate_account}
+      FunctionName: ${apf_tf_workspace_import}
       Payload.$: $
     Resource: arn:aws:states:::lambda:invoke
-    ResultPath: $.tf_acct_import
+    ResultPath: $.tf_workspace_import
     ResultSelector:
       results.$: $.Payload
     Retry:
