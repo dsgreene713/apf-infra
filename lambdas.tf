@@ -30,21 +30,21 @@ locals {
       iam_policy_docs = [data.aws_iam_policy_document.apf_account_create.json]
     }
     (local.lambda_names.apf_account_describe_request) = {
-      description     = "lambda to describe org account"
+      description     = "lambda to describe account creation request"
       handler         = local.lambda_handler
       runtime         = local.lambda_runtime
       source_path     = "${local.lambda_base_source_path}/${local.lambda_names.apf_account_describe_request}"
       iam_policy_docs = [data.aws_iam_policy_document.apf_account_describe_request.json]
     }
     (local.lambda_names.apf_service_quotas_update) = {
-      description     = "lambda to describe org account"
+      description     = "lambda to update service quotas"
       handler         = local.lambda_handler
       runtime         = local.lambda_runtime
       source_path     = "${local.lambda_base_source_path}/${local.lambda_names.apf_service_quotas_update}"
       iam_policy_docs = [data.aws_iam_policy_document.apf_service_quotas_update.json]
     }
     (local.lambda_names.apf_account_describe) = {
-      description     = "lambda to write to dynamodb"
+      description     = "lambda to describe org account"
       handler         = local.lambda_handler
       runtime         = local.lambda_runtime
       source_path     = "${local.lambda_base_source_path}/${local.lambda_names.apf_account_describe}"
