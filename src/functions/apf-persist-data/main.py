@@ -29,7 +29,7 @@ def format_data_for_insert(event: dict):
 
 def lambda_handler(event, context):
     client = boto3.client('dynamodb')
-    table = os.environ['DYNAMODB_TABLE']
+    table = os.environ['DYNAMODB_ACCT_TABLE']
     data = format_data_for_insert(event=event)
 
     try:

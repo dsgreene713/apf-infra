@@ -1,0 +1,60 @@
+terraform {
+  required_version = "~> 1.8.0"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.32"
+    }
+  }
+  cloud {
+    organization = "blunatech-demo"
+
+    workspaces {
+      project = "apf-infra"
+      name = "apf-import-provisioned-accounts"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+locals {
+  accounts_to_import = {
+    {% for acct in accounts %}
+        {{ acct.acct_id }} = {
+            acct_name = "{{ acct.acct_name }}"
+            acct_email = "{{ acct.acct_email }}"
+        }
+    {% endfor %}
+  }
+}
+
+import {
+  for_each = local.accounts_to_import
+
+  to = aws_organizations_account.this[each.key]
+  id = each.key
+}
+
+resource "aws_organizations_account" "this" {
+  for_each = local.accounts_to_import
+
+  name  = each.value.acct_name
+  email = each.value.acct_email
+
+  tags = {
+    "imported-by" = "apf-workflow"
+  }
+}
+
+data "aws_organizations_organization" "imports" {
+  # ensure we import any new accounts first
+  depends_on = [aws_organizations_account.this]
+}
+
+output "accounts" {
+  value = data.aws_organizations_organization.imports.accounts
+}
