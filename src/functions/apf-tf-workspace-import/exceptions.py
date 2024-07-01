@@ -1,0 +1,2 @@
+class TFEWorkspaceConfigUploadException(Exception):
+    pass
